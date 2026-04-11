@@ -1,0 +1,4 @@
+Cycle,read_inputs,validate_inputs,update_mode,run_control_checks,update_fault_status,evaluate_system_state
+1,120,60,282,70,68,124
+2,120,60,282,70,68,124
+3,120,60,282,70,68,124
