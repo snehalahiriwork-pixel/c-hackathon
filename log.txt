@@ -1,0 +1,5 @@
+
+=== Vehicle ECU Simulator ===
+0 = Interactive mode (manual input)
+1 = Auto-run all 9 mandatory test cases
+Choice: [ERROR] Could not create log.txt
