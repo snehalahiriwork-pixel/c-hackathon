@@ -1,32 +1,35 @@
 === Module Object Sizes (text/data/bss in bytes) === 
    text	   data	    bss	    dec	    hex	filename
-   7732	      0	  39360	  47092	   b7f4	ecu_control.o
-   1152	      0	      0	   1152	    480	input.o
-    384	      0	      0	    384	    180	mode.o
-    264	      0	      0	    264	    108	control.o
-    368	      0	      0	    368	    170	fault.o
-    940	      0	      0	    940	    3ac	state.o
-   1804	      0	      0	   1804	    70c	log.o
+   7520	      0	  39360	  46880	   b720	ecu_control.o
+   1324	      0	      0	   1324	    52c	input.o
+    372	      0	      0	    372	    174	mode.o
+    296	      0	      0	    296	    128	control.o
+    432	      0	      0	    432	    1b0	fault.o
+    844	      0	      0	    844	    34c	state.o
+   1736	      0	      0	   1736	    6c8	log.o
      36	      0	      4	     40	     28	perf.o
+   1336	      0	      0	   1336	    538	system_io.o
  
 === Static Library (libecu.a) === 
    text	   data	    bss	    dec	    hex	filename
-   7732	      0	  39360	  47092	   b7f4	ecu_control.o (ex libecu.a)
-   1152	      0	      0	   1152	    480	input.o (ex libecu.a)
-    384	      0	      0	    384	    180	mode.o (ex libecu.a)
-    264	      0	      0	    264	    108	control.o (ex libecu.a)
-    368	      0	      0	    368	    170	fault.o (ex libecu.a)
-    940	      0	      0	    940	    3ac	state.o (ex libecu.a)
-   1804	      0	      0	   1804	    70c	log.o (ex libecu.a)
+   7520	      0	  39360	  46880	   b720	ecu_control.o (ex libecu.a)
+   1324	      0	      0	   1324	    52c	input.o (ex libecu.a)
+    372	      0	      0	    372	    174	mode.o (ex libecu.a)
+    296	      0	      0	    296	    128	control.o (ex libecu.a)
+    432	      0	      0	    432	    1b0	fault.o (ex libecu.a)
+    844	      0	      0	    844	    34c	state.o (ex libecu.a)
+   1736	      0	      0	   1736	    6c8	log.o (ex libecu.a)
      36	      0	      4	     40	     28	perf.o (ex libecu.a)
+   1336	      0	      0	   1336	    538	system_io.o (ex libecu.a)
  
 === File Sizes === 
-ecu_control.o: 11806 bytes 
-input.o: 2187 bytes 
-mode.o: 1196 bytes 
-control.o: 881 bytes 
-fault.o: 1096 bytes 
-state.o: 1844 bytes 
-log.o: 3026 bytes 
+ecu_control.o: 12050 bytes 
+input.o: 2528 bytes 
+mode.o: 1121 bytes 
+control.o: 913 bytes 
+fault.o: 1160 bytes 
+state.o: 1737 bytes 
+log.o: 3022 bytes 
 perf.o: 455 bytes 
-libecu.a: 23396 bytes 
+system_io.o: 3128 bytes 
+libecu.a: 27336 bytes 

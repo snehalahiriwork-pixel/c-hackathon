@@ -147,21 +147,31 @@ static int jsmn_parse_primitive(jsmn_parser *parser, const char *js, size_t len,
     case ',':
     case ']':
     case '}':
-      goto found;
+      break;
+    default:
+      if (js[parser->pos] < 32 || js[parser->pos] >= 127) {
+        parser->pos = start;
+        return JSMN_ERROR_INVAL;
+      }
+      continue;
     }
-    if (js[parser->pos] < 32 || js[parser->pos] >= 127) {
-      parser->pos = start;
-      return JSMN_ERROR_INVAL;
-    }
+    break; /* Found a separator */
   }
 #ifdef JSMN_STRICT
   /* In strict mode primitive must be followed by a comma or object/array end */
-  parser->pos = start;
-  return JSMN_ERROR_PART;
+  if (parser->pos < len && js[parser->pos] != '\0' && 
+      js[parser->pos] != ',' && js[parser->pos] != ']' && js[parser->pos] != '}') {
+      /* Fall through */
+  } else {
+      parser->pos = start;
+      return JSMN_ERROR_PART;
+  }
 #endif
 
-found:
   if (tokens == NULL) {
+    if (parser->pos < len && js[parser->pos] != '\0') {
+        /* We stopped at a separator */
+    }
     parser->pos--;
     return 0;
   }

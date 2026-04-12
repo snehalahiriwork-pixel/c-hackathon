@@ -1,63 +1,66 @@
 /**
  * @file mode.c
- * @brief Mode controller implementation.
- *
- * Legal transitions:
- *   OFF         -> ACC              (allowed)
- *   ACC         -> IGNITION_ON      (allowed)
- *   ACC         -> OFF              (allowed)
- *   IGNITION_ON -> ACC              (allowed)
- *   IGNITION_ON -> OFF              (allowed)
- *   OFF         -> IGNITION_ON      (ILLEGAL)
- *   FAULT       -> any              (LOCKED until reset)
- *   same -> same                    (always allowed)
+ * @brief Mode controller implementation — MISRA refactored.
  */
 
 #include "mode.h"
 #include "fault.h"
 #include "perf.h"
-#include <stdio.h>
+#include "system_io.h"
+#include <stdbool.h>
 
 /**
  * @brief Check if a mode transition is legal.
- * @return 1 if legal, 0 if illegal.
+ * @return true if legal, false if illegal.
  */
-static int is_legal_transition(Mode current, Mode requested)
+static bool is_legal_transition(Mode current, Mode requested)
 {
+    bool legal = false;
+
     if (current == requested) {
-        return 1;   /* staying in same mode is always legal */
+        legal = true;   /* staying in same mode is always legal */
+    } else {
+        switch (current) {
+            case MODE_OFF:
+                legal = (requested == MODE_ACC);
+                break;
+
+            case MODE_ACC:
+                legal = (requested == MODE_IGNITION_ON || requested == MODE_OFF);
+                break;
+
+            case MODE_IGNITION_ON:
+                legal = (requested == MODE_ACC || requested == MODE_OFF);
+                break;
+
+            case MODE_FAULT:
+                legal = false;   /* FAULT mode is locked - no transitions allowed */
+                break;
+
+            case MODE_UNKNOWN:
+            default:
+                legal = false;
+                break;
+        }
     }
-
-    switch (current) {
-        case MODE_OFF:
-            return (requested == MODE_ACC) ? 1 : 0;
-
-        case MODE_ACC:
-            return (requested == MODE_IGNITION_ON || requested == MODE_OFF) ? 1 : 0;
-
-        case MODE_IGNITION_ON:
-            return (requested == MODE_ACC || requested == MODE_OFF) ? 1 : 0;
-
-        case MODE_FAULT:
-            return 0;   /* FAULT mode is locked - no transitions allowed */
-
-        default:
-            return 0;
-    }
+    
+    return legal;
 }
 
 void update_mode(VehicleStatus *status, const VehicleInput *input, FaultStatus *faults)
 {
-    status->previous_mode = status->current_mode;
+    if ((status != NULL) && (input != NULL) && (faults != NULL)) {
+        status->previous_mode = status->current_mode;
 
-    if (is_legal_transition(status->current_mode, input->requested_mode)) {
-        status->current_mode = input->requested_mode;
-    } else {
-        if (!g_suppress_io) {
-            printf("[MODE] Illegal transition %d -> %d -> forcing FAULT mode\n",
-                   (int)status->current_mode, (int)input->requested_mode);
+        if (is_legal_transition(status->current_mode, input->requested_mode)) {
+            status->current_mode = input->requested_mode;
+        } else {
+            if (!g_suppress_io) {
+                sys_printf("[MODE] Illegal transition %d -> %d -> forcing FAULT mode\n",
+                       (int)status->current_mode, (int)input->requested_mode);
+            }
+            set_fault(faults, FAULT_ILLEGAL_MODE);
+            status->current_mode = MODE_FAULT;
         }
-        set_fault(faults, FAULT_ILLEGAL_MODE);
-        status->current_mode = MODE_FAULT;
     }
 }

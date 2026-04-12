@@ -6,7 +6,7 @@
 CC      = gcc
 CFLAGS  = -Wall -Wextra -std=c99 -pedantic -O2 -I.
 
-SRCS    = ecu_control.c input.c mode.c control.c fault.c state.c log.c perf.c
+SRCS    = ecu_control.c input.c mode.c control.c fault.c state.c log.c perf.c system_io.c
 OBJS    = $(SRCS:.c=.o)
 LIB     = libecu.a
 

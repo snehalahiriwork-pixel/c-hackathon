@@ -29,8 +29,12 @@ typedef enum {
     MODE_OFF          = 0,
     MODE_ACC          = 1,
     MODE_IGNITION_ON  = 2,
-    MODE_FAULT        = 3
+    MODE_FAULT        = 3,
+    MODE_UNKNOWN      = 4   /* Added for MISRA compliance */
 } Mode;
+
+#define MODE_MIN (MODE_OFF)
+#define MODE_MAX (MODE_FAULT)
 
 /**
  * @brief System health states with escalation path.
@@ -40,8 +44,12 @@ typedef enum {
 typedef enum {
     STATE_NORMAL   = 0,
     STATE_DEGRADED = 1,
-    STATE_SAFE     = 2
+    STATE_SAFE     = 2,
+    STATE_UNKNOWN  = 3    /* Added for MISRA compliance */
 } SystemState;
+
+#define STATE_MIN (STATE_NORMAL)
+#define STATE_MAX (STATE_SAFE)
 
 /* ======================== Fault Bit Masks ======================== */
 
@@ -58,18 +66,18 @@ typedef uint32_t FaultFlags;
 
 /* ======================== Input Validation Ranges ======================== */
 
-#define SPEED_MIN       0
-#define SPEED_MAX       200
+#define SPEED_MIN       (0)
+#define SPEED_MAX       (200)
 #define TEMP_MIN        (-40)
-#define TEMP_MAX        150
-#define GEAR_MIN        0
-#define GEAR_MAX        5
+#define TEMP_MAX        (150)
+#define GEAR_MIN        (0)
+#define GEAR_MAX        (5)
 
 /* ======================== Control Thresholds ======================== */
 
-#define OVERSPEED_THRESHOLD         120
-#define HIGH_TEMP_THRESHOLD         95
-#define CRITICAL_TEMP_THRESHOLD     110
+#define OVERSPEED_THRESHOLD         (120)
+#define HIGH_TEMP_THRESHOLD         (95)
+#define CRITICAL_TEMP_THRESHOLD     (110)
 
 /* ======================== Structures ======================== */
 
