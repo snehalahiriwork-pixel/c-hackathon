@@ -19,10 +19,10 @@
 
 /* No standard headers included here directly - all abstracted via system_io.h */
 
-#define MAX_TESTS           20U
+#define MAX_TESTS           12U
 #define MAX_CYCLES_PER_TEST 10U
-#define JSON_BUFFER_SIZE    32768U
-#define MAX_TOKENS          2048U
+#define JSON_BUFFER_SIZE    8192U
+#define MAX_TOKENS          512U
 
 typedef struct {
     char           name[64];
