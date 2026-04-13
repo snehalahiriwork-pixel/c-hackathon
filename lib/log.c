@@ -5,8 +5,10 @@
 
 #include "log.h"
 #include "system_io.h"
+#include <string.h>
+#include <stdbool.h>
 
-static const char* mode_to_str(Mode m)
+const char* mode_to_name(Mode m)
 {
     const char *s;
     switch (m) {
@@ -20,7 +22,7 @@ static const char* mode_to_str(Mode m)
     return s;
 }
 
-static const char* state_to_str(SystemState s)
+const char* state_to_name(SystemState s)
 {
     const char *str;
     switch (s) {
@@ -46,12 +48,12 @@ static void write_summary(sys_file_t out,
 
         sys_fprintf(out, "Input  : Speed=%d  Temp=%d  Gear=%d  Mode=%s\n",
                 input->speed, input->temperature, input->gear,
-                mode_to_str(input->requested_mode));
+                mode_to_name(input->requested_mode));
 
         sys_fprintf(out, "Status : Mode=%s (prev=%s)  State=%s\n",
-                mode_to_str(status->current_mode),
-                mode_to_str(status->previous_mode),
-                state_to_str(status->system_state));
+                mode_to_name(status->current_mode),
+                mode_to_name(status->previous_mode),
+                state_to_name(status->system_state));
 
         sys_fprintf(out, "Faults : 0x%08X\n", faults->active_faults);
 
@@ -105,5 +107,37 @@ void log_cycle_timing(sys_file_t logfile, uint16_t cycle_num, const CycleTiming 
         sys_fprintf(logfile, "    update_fault_status   : %llu\n", (unsigned long long)timing->update_fault_status);
         sys_fprintf(logfile, "    evaluate_system_state : %llu\n", (unsigned long long)timing->evaluate_system_state);
         sys_fprintf(logfile, "    TOTAL                 : %llu\n", (unsigned long long)timing->total);
+    }
+}
+
+void fault_flags_to_csv_str(FaultFlags flags, char *buf, size_t size)
+{
+    if ((buf != NULL) && (size > 0U)) {
+        sys_memset(buf, 0, size);
+        if (flags == 0U) {
+            sys_strncpy(buf, "NONE", size - 1U);
+        } else {
+            bool first = true;
+            if ((flags & FAULT_OVERSPEED) != 0U) {
+                if (!first) { strcat(buf, ", "); }
+                strcat(buf, "OVERSPEED"); first = false;
+            }
+            if ((flags & FAULT_OVERTEMP_CRITICAL) != 0U) {
+                if (!first) { strcat(buf, ", "); }
+                strcat(buf, "CRIT_OVERHEAT"); first = false;
+            }
+            if ((flags & FAULT_OVERTEMP_HIGH) != 0U) {
+                if (!first) { strcat(buf, ", "); }
+                strcat(buf, "HIGH_TEMP"); first = false;
+            }
+            if ((flags & FAULT_INVALID_GEAR) != 0U) {
+                if (!first) { strcat(buf, ", "); }
+                strcat(buf, "INV_GEAR"); first = false;
+            }
+            if ((flags & FAULT_ILLEGAL_MODE) != 0U) {
+                if (!first) { strcat(buf, ", "); }
+                strcat(buf, "ILL_MODE"); first = false;
+            }
+        }
     }
 }

@@ -32,4 +32,20 @@ void log_cycle_summary(const VehicleInput *input,
  */
 void log_cycle_timing(sys_file_t logfile, uint16_t cycle_num, const CycleTiming *timing);
 
+/**
+ * @brief Convert Mode/State to human-readable names.
+ */
+const char* mode_to_name(Mode m);
+const char* state_to_name(SystemState s);
+
+/**
+ * @brief Generate a comma-separated list of active faults.
+ *
+ * @param flags  Fault bit-flags.
+ * @param buf    Buffer to store result.
+ * @param size   Buffer size.
+ */
+void fault_flags_to_csv_str(FaultFlags flags, char *buf, size_t size);
+
+
 #endif /* LOG_H_ */

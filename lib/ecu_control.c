@@ -16,6 +16,8 @@
 
 #define JSMN_STATIC
 #include "jsmn.h"
+#include <string.h>
+#include <stdio.h>
 
 /* No standard headers included here directly - all abstracted via system_io.h */
 
@@ -44,32 +46,7 @@ static uint16_t g_num_loaded_tests = 0;
  * Console display helpers
  * ================================================================ */
 
-static const char* mode_to_name(Mode m)
-{
-    const char *s;
-    switch (m) {
-        case MODE_OFF:         s = "OFF";         break;
-        case MODE_ACC:         s = "ACC";         break;
-        case MODE_IGNITION_ON: s = "IGNITION_ON"; break;
-        case MODE_FAULT:       s = "FAULT";       break;
-        case MODE_UNKNOWN:
-        default:               s = "UNKNOWN";     break;
-    }
-    return s;
-}
-
-static const char* state_to_name(SystemState s)
-{
-    const char *str;
-    switch (s) {
-        case STATE_NORMAL:   str = "NORMAL";   break;
-        case STATE_DEGRADED: str = "DEGRADED"; break;
-        case STATE_SAFE:     str = "SAFE";     break;
-        case STATE_UNKNOWN:
-        default:             str = "UNKNOWN";  break;
-    }
-    return str;
-}
+/* Name conversion helpers moved to log.c for public access */
 
 static void print_faults_inline_to_file(sys_file_t f, FaultFlags flags)
 {
@@ -233,126 +210,161 @@ void run_all_test_cases(VehicleStatus *status, FaultStatus *faults)
         }
 
         sys_file_t logfile = sys_fopen("log.txt", "w");
-        if (logfile == NULL) {
-            sys_log_error("Could not create log.txt");
-            return;
-        }
+        sys_file_t csv_report = sys_fopen("integration_test_report.csv", "w");
 
-        sys_printf("\n========================================================\n");
-        sys_printf("  VEHICLE ECU SIMULATOR - PERSISTENT TEST SESSION\n");
-        sys_printf("  (Loaded %u cumulative tests from test_cases.json)\n", (unsigned int)g_num_loaded_tests);
-        sys_printf("========================================================\n");
+        if ((logfile != NULL) && (csv_report != NULL)) {
+            sys_fprintf(csv_report, "TC,Test condition,Expected Outcome,Observed Outcome,Status (pass or fail)\n");
 
-        sys_fprintf(logfile, "=== VEHICLE ECU PERSISTENT TEST LOGS ===\n");
-        sys_fprintf(logfile, "Cumulative flow enabled. Factory state initialized.\n\n");
+            sys_printf("\n========================================================\n");
+            sys_printf("  VEHICLE ECU SIMULATOR - PERSISTENT TEST SESSION\n");
+            sys_printf("  (Loaded %u cumulative tests from test_cases.json)\n", (unsigned int)g_num_loaded_tests);
+            sys_printf("========================================================\n");
 
-        /* Factory Initial State */
-        g_suppress_io = 1;
-        init_system(status, faults);
-        g_suppress_io = 0;
+            sys_fprintf(logfile, "=== VEHICLE ECU PERSISTENT TEST LOGS ===\n");
+            sys_fprintf(logfile, "Cumulative flow enabled. Factory state initialized.\n\n");
 
-        for (t = 0U; t < g_num_loaded_tests; t++) {
-            uint64_t test_total_cycles = 0U;
-            const TestDefinition *test = &g_tests[t];
+            /* Factory Initial State */
+            g_suppress_io = 1;
+            init_system(status, faults);
+            g_suppress_io = 0;
 
-            sys_fprintf(logfile, "\n>>> TEST %s <<<\n", test->name);
-            sys_fprintf(logfile, "    Expected Summary: %s\n", test->expected_desc);
+            for (t = 0U; t < g_num_loaded_tests; t++) {
+                uint64_t test_total_cycles = 0U;
+                const TestDefinition *test = &g_tests[t];
 
-            for (c = 0U; c < test->num_cycles; c++) {
-                CycleTiming timing = {0};
+                sys_fprintf(logfile, "\n>>> TEST %s <<<\n", test->name);
+                sys_fprintf(logfile, "    Expected Summary: %s\n", test->expected_desc);
 
-                /* Check for explicit system reset */
-                if (test->reset_triggered[c] != 0) {
+                for (c = 0U; c < test->num_cycles; c++) {
+                    CycleTiming timing = {0};
+
+                    /* Check for explicit system reset */
+                    if (test->reset_triggered[c] != 0) {
+                        g_suppress_io = 1;
+                        init_system(status, faults);
+                        sys_memset(&active_input, 0, sizeof(VehicleInput));
+                        g_suppress_io = 0;
+                        sys_fprintf(logfile, "  [SYSTEM] Manual Reset Triggered\n");
+                    }
+
+                    /* Apply Delta Update to Active Input */
+                    const VehicleInput *delta = &test->cycles[c];
+                    if (delta->speed != INPUT_SENTINEL)            active_input.speed = delta->speed;
+                    if (delta->temperature != INPUT_SENTINEL)      active_input.temperature = delta->temperature;
+                    if (delta->gear != (int8_t)INPUT_SENTINEL)     active_input.gear = delta->gear;
+                    if (delta->requested_mode != (Mode)INPUT_SENTINEL) active_input.requested_mode = delta->requested_mode;
+
+                    /* Scheduler Flow per Cycle (Cumulative) */
+                    clear_all_faults(faults);
                     g_suppress_io = 1;
-                    init_system(status, faults);
-                    sys_memset(&active_input, 0, sizeof(VehicleInput));
+
+                    /* Local copy of active_input to pass to modules (maintaining stability) */
+                    VehicleInput current_cycle_input = active_input;
+
+                    tsc0 = read_tsc(); validate_inputs(&current_cycle_input, status, faults); tsc1 = read_tsc();
+                    timing.validate_inputs = tsc1 - tsc0;
+                    /* Update active_input with any corrections from validate_inputs */
+                    active_input = current_cycle_input;
+
+                    tsc0 = read_tsc(); update_mode(status, &active_input, faults); tsc1 = read_tsc();
+                    timing.update_mode = tsc1 - tsc0;
+
+                    tsc0 = read_tsc(); run_control_checks(&active_input, status, faults); tsc1 = read_tsc();
+                    timing.run_control_checks = tsc1 - tsc0;
+
+                    tsc0 = read_tsc(); update_fault_status(faults); tsc1 = read_tsc();
+                    timing.update_fault_status = tsc1 - tsc0;
+
+                    tsc0 = read_tsc(); evaluate_system_state(status, faults); tsc1 = read_tsc();
+                    timing.evaluate_system_state = tsc1 - tsc0;
+
                     g_suppress_io = 0;
-                    sys_fprintf(logfile, "  [SYSTEM] Manual Reset Triggered\n");
+                    timing.total = timing.validate_inputs + timing.update_mode + 
+                                   timing.run_control_checks + timing.update_fault_status + 
+                                   timing.evaluate_system_state;
+                    test_total_cycles += timing.total;
+
+                    log_cycle_summary(&active_input, status, faults, logfile);
+                    log_cycle_timing(logfile, c + 1U, &timing);
                 }
 
-                /* Apply Delta Update to Active Input */
-                const VehicleInput *delta = &test->cycles[c];
-                if (delta->speed != INPUT_SENTINEL)            active_input.speed = delta->speed;
-                if (delta->temperature != INPUT_SENTINEL)      active_input.temperature = delta->temperature;
-                if (delta->gear != (int8_t)INPUT_SENTINEL)     active_input.gear = delta->gear;
-                if (delta->requested_mode != (Mode)INPUT_SENTINEL) active_input.requested_mode = delta->requested_mode;
+                int mode_match   = (status->current_mode == test->exp_mode);
+                int state_match  = (status->system_state == test->exp_state);
+                int faults_match = (faults->active_faults == test->exp_faults);
+                int pass = (mode_match && state_match && faults_match);
+                const char *result_str = (pass != 0) ? "PASS" : "FAIL";
 
-                /* Scheduler Flow per Cycle (Cumulative) */
-                clear_all_faults(faults);
-                g_suppress_io = 1;
+                if (pass != 0) { pass_count++; } else { fail_count++; }
 
-                /* Local copy of active_input to pass to modules (maintaining stability) */
-                VehicleInput current_cycle_input = active_input;
+                sys_fprintf(logfile, "\n  [RESULT] %s\n", result_str);
+                if (pass == 0) {
+                    sys_fprintf(logfile, "  [DETAILS] Mismatches against cumulative baseline:\n");
+                    if (mode_match == 0)   sys_fprintf(logfile, "    - Mode mismatch: Exp=%d, Act=%d\n", (int)test->exp_mode, (int)status->current_mode);
+                    if (state_match == 0)  sys_fprintf(logfile, "    - State mismatch: Exp=%d, Act=%d\n", (int)test->exp_state, (int)status->system_state);
+                    if (faults_match == 0) sys_fprintf(logfile, "    - Faults mismatch: Exp=0x%08X, Act=0x%08X\n", (unsigned int)test->exp_faults, (unsigned int)faults->active_faults);
+                }
+                sys_fprintf(logfile, "  [PERF] Test Total: %llu CPU cycles\n", (unsigned long long)test_total_cycles);
 
-                tsc0 = read_tsc(); validate_inputs(&current_cycle_input, status, faults); tsc1 = read_tsc();
-                timing.validate_inputs = tsc1 - tsc0;
-                /* Update active_input with any corrections from validate_inputs */
-                active_input = current_cycle_input;
+                /* Console Summary */
+                sys_printf("\n  TEST %s [%s]\n", test->name, result_str);
+                sys_printf("  --------------------------------------------------------\n");
+                sys_printf("  Active   : Speed=%-3d  Temp=%-3d  Gear=%d  Mode=%s\n",
+                       (int)active_input.speed, (int)active_input.temperature, (int)active_input.gear, mode_to_name(active_input.requested_mode));
+                sys_printf("  Expected : Mode=%-12s  State=%-8s  Faults=",
+                       mode_to_name(test->exp_mode), state_to_name(test->exp_state));
+                print_faults_inline_to_file(NULL, test->exp_faults);
+                sys_printf("\n             (%s)\n", test->expected_desc);
+                sys_printf("  Current  : Mode=%-12s  State=%-8s  Faults=",
+                       mode_to_name(status->current_mode), state_to_name(status->system_state));
+                print_faults_inline(faults->active_faults);
+                sys_printf("\n             Counters: OS=%u CritT=%u HighT=%u InvGear=%u IllMode=%u\n",
+                       (unsigned int)faults->overspeed_counter, (unsigned int)faults->overtemp_critical_counter, 
+                       (unsigned int)faults->overtemp_high_counter, (unsigned int)faults->invalid_gear_counter, (unsigned int)faults->illegal_mode_counter);
+                sys_printf("  CPU Time : %llu cycles\n", (unsigned long long)test_total_cycles);
+                sys_printf("  --------------------------------------------------------\n");
 
-                tsc0 = read_tsc(); update_mode(status, &active_input, faults); tsc1 = read_tsc();
-                timing.update_mode = tsc1 - tsc0;
-
-                tsc0 = read_tsc(); run_control_checks(&active_input, status, faults); tsc1 = read_tsc();
-                timing.run_control_checks = tsc1 - tsc0;
-
-                tsc0 = read_tsc(); update_fault_status(faults); tsc1 = read_tsc();
-                timing.update_fault_status = tsc1 - tsc0;
-
-                tsc0 = read_tsc(); evaluate_system_state(status, faults); tsc1 = read_tsc();
-                timing.evaluate_system_state = tsc1 - tsc0;
-
-                g_suppress_io = 0;
-                timing.total = timing.validate_inputs + timing.update_mode + 
-                               timing.run_control_checks + timing.update_fault_status + 
-                               timing.evaluate_system_state;
-                test_total_cycles += timing.total;
-
-                log_cycle_summary(&active_input, status, faults, logfile);
-                log_cycle_timing(logfile, c + 1U, &timing);
+                /* Generate CSV Row */
+                char cond_buf[256];
+                char fault_buf[128];
+                
+                /* Build Sequence Condition String */
+                sys_memset(cond_buf, 0, sizeof(cond_buf));
+                sys_strncpy(cond_buf, "Mode: ", sizeof(cond_buf)-1U);
+                Mode last_m = MODE_OFF; /* Assume starting from OFF for sequence display */
+                for (uint16_t j = 0; j < test->num_cycles; j++) {
+                    Mode m_req = test->cycles[j].requested_mode;
+                    if (m_req != (Mode)INPUT_SENTINEL) {
+                        last_m = m_req;
+                    }
+                    strcat(cond_buf, mode_to_name(last_m));
+                    if (j < (test->num_cycles - 1U)) {
+                        strcat(cond_buf, " -> ");
+                    }
+                }
+                {
+                    char tmp[64];
+                    sprintf(tmp, " [S:%d T:%d G:%d]", (int)active_input.speed, (int)active_input.temperature, (int)active_input.gear);
+                    strcat(cond_buf, tmp);
+                }
+                
+                /* Build Observed Outcome String */
+                fault_flags_to_csv_str(faults->active_faults, fault_buf, sizeof(fault_buf));
+                
+                /* Write to CSV with quotes for safety */
+                sys_fprintf(csv_report, "\"%s\",\"%s\",\"%s\",\"Mode=%s, State=%s, Faults=%s\",\"%s\"\n",
+                            test->name, cond_buf, test->expected_desc, 
+                            mode_to_name(status->current_mode), state_to_name(status->system_state), 
+                            fault_buf, result_str);
             }
 
-            int mode_match   = (status->current_mode == test->exp_mode);
-            int state_match  = (status->system_state == test->exp_state);
-            int faults_match = (faults->active_faults == test->exp_faults);
-            int pass = (mode_match && state_match && faults_match);
-            const char *result_str = (pass != 0) ? "PASS" : "FAIL";
+            sys_fprintf(logfile, "\n=== SUMMARY: %u Total, %u Passed, %u Failed ===\n", (unsigned int)g_num_loaded_tests, (unsigned int)pass_count, (unsigned int)fail_count);
+            sys_fclose(logfile);
+            sys_fclose(csv_report);
 
-            if (pass != 0) { pass_count++; } else { fail_count++; }
-
-            sys_fprintf(logfile, "\n  [RESULT] %s\n", result_str);
-            if (pass == 0) {
-                sys_fprintf(logfile, "  [DETAILS] Mismatches against cumulative baseline:\n");
-                if (mode_match == 0)   sys_fprintf(logfile, "    - Mode mismatch: Exp=%d, Act=%d\n", (int)test->exp_mode, (int)status->current_mode);
-                if (state_match == 0)  sys_fprintf(logfile, "    - State mismatch: Exp=%d, Act=%d\n", (int)test->exp_state, (int)status->system_state);
-                if (faults_match == 0) sys_fprintf(logfile, "    - Faults mismatch: Exp=0x%08X, Act=0x%08X\n", (unsigned int)test->exp_faults, (unsigned int)faults->active_faults);
-            }
-            sys_fprintf(logfile, "  [PERF] Test Total: %llu CPU cycles\n", (unsigned long long)test_total_cycles);
-
-            /* Console Summary */
-            sys_printf("\n  TEST %s [%s]\n", test->name, result_str);
-            sys_printf("  --------------------------------------------------------\n");
-            sys_printf("  Active   : Speed=%-3d  Temp=%-3d  Gear=%d  Mode=%s\n",
-                   (int)active_input.speed, (int)active_input.temperature, (int)active_input.gear, mode_to_name(active_input.requested_mode));
-            sys_printf("  Expected : Mode=%-12s  State=%-8s  Faults=",
-                   mode_to_name(test->exp_mode), state_to_name(test->exp_state));
-            print_faults_inline_to_file(NULL, test->exp_faults);
-            sys_printf("\n             (%s)\n", test->expected_desc);
-            sys_printf("  Current  : Mode=%-12s  State=%-8s  Faults=",
-                   mode_to_name(status->current_mode), state_to_name(status->system_state));
-            print_faults_inline(faults->active_faults);
-            sys_printf("\n             Counters: OS=%u CritT=%u HighT=%u InvGear=%u IllMode=%u\n",
-                   (unsigned int)faults->overspeed_counter, (unsigned int)faults->overtemp_critical_counter, 
-                   (unsigned int)faults->overtemp_high_counter, (unsigned int)faults->invalid_gear_counter, (unsigned int)faults->illegal_mode_counter);
-            sys_printf("  CPU Time : %llu cycles\n", (unsigned long long)test_total_cycles);
-            sys_printf("  --------------------------------------------------------\n");
+            sys_printf("\n========================================================\n");
+            sys_printf("  SUMMARY: %u Total, %u Passed, %u Failed\n", (unsigned int)g_num_loaded_tests, (unsigned int)pass_count, (unsigned int)fail_count);
+            sys_printf("  Detailed logs + CSV report saved to workspace\n");
+            sys_printf("========================================================\n");
         }
-
-        sys_fprintf(logfile, "\n=== SUMMARY: %u Total, %u Passed, %u Failed ===\n", (unsigned int)g_num_loaded_tests, (unsigned int)pass_count, (unsigned int)fail_count);
-        sys_fclose(logfile);
-
-        sys_printf("\n========================================================\n");
-        sys_printf("  SUMMARY: %u Total, %u Passed, %u Failed\n", (unsigned int)g_num_loaded_tests, (unsigned int)pass_count, (unsigned int)fail_count);
-        sys_printf("  Detailed logs + CPU cycle data saved to log.txt\n");
-        sys_printf("========================================================\n");
     }
 }
