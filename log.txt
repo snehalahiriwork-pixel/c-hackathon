@@ -1,5 +1,5 @@
-=== VEHICLE ECU TEST LOGS ===
-Loaded from test_cases.json
+=== VEHICLE ECU PERSISTENT TEST LOGS ===
+Cumulative flow enabled. Factory state initialized.
 
 
 >>> TEST 1. Normal Start <<<
@@ -14,12 +14,12 @@ Counters: OS=0  CritT=0  HighT=0  InvGear=0  IllMode=0
 ======================
 
   [PERF] Cycle 1  CPU Cycles (excluding printf):
-    validate_inputs       : 1286
-    update_mode           : 438
-    run_control_checks    : 116
-    update_fault_status   : 228
-    evaluate_system_state : 142
-    TOTAL                 : 2210
+    validate_inputs       : 156
+    update_mode           : 366
+    run_control_checks    : 114
+    update_fault_status   : 146
+    evaluate_system_state : 94
+    TOTAL                 : 876
 
 === CYCLE SUMMARY ===
 Input  : Speed=40  Temp=80  Gear=1  Mode=ACC
@@ -30,12 +30,12 @@ Counters: OS=0  CritT=0  HighT=0  InvGear=0  IllMode=0
 ======================
 
   [PERF] Cycle 2  CPU Cycles (excluding printf):
-    validate_inputs       : 52
-    update_mode           : 198
-    run_control_checks    : 50
-    update_fault_status   : 48
-    evaluate_system_state : 48
-    TOTAL                 : 396
+    validate_inputs       : 34
+    update_mode           : 172
+    run_control_checks    : 32
+    update_fault_status   : 32
+    evaluate_system_state : 34
+    TOTAL                 : 304
 
 === CYCLE SUMMARY ===
 Input  : Speed=40  Temp=80  Gear=1  Mode=IGNITION_ON
@@ -46,34 +46,34 @@ Counters: OS=0  CritT=0  HighT=0  InvGear=0  IllMode=0
 ======================
 
   [PERF] Cycle 3  CPU Cycles (excluding printf):
-    validate_inputs       : 62
-    update_mode           : 150
-    run_control_checks    : 60
-    update_fault_status   : 58
-    evaluate_system_state : 62
-    TOTAL                 : 392
+    validate_inputs       : 30
+    update_mode           : 76
+    run_control_checks    : 32
+    update_fault_status   : 30
+    evaluate_system_state : 34
+    TOTAL                 : 202
 
   [RESULT] PASS
-  [PERF] Test Total: 2998 CPU cycles
+  [PERF] Test Total: 1382 CPU cycles
 
 >>> TEST 2. Overspeed <<<
     Expected Summary: Overspeed fault, counter incremented, DEGRADED state
 
 === CYCLE SUMMARY ===
-Input  : Speed=0  Temp=25  Gear=0  Mode=ACC
-Status : Mode=ACC (prev=OFF)  State=NORMAL
+Input  : Speed=0  Temp=25  Gear=1  Mode=ACC
+Status : Mode=ACC (prev=IGNITION_ON)  State=NORMAL
 Faults : 0x00000000
 Counters: OS=0  CritT=0  HighT=0  InvGear=0  IllMode=0
   [OK] No active faults
 ======================
 
   [PERF] Cycle 1  CPU Cycles (excluding printf):
-    validate_inputs       : 70
-    update_mode           : 202
-    run_control_checks    : 62
-    update_fault_status   : 58
-    evaluate_system_state : 62
-    TOTAL                 : 454
+    validate_inputs       : 108
+    update_mode           : 134
+    run_control_checks    : 102
+    update_fault_status   : 140
+    evaluate_system_state : 94
+    TOTAL                 : 578
 
 === CYCLE SUMMARY ===
 Input  : Speed=40  Temp=85  Gear=4  Mode=IGNITION_ON
@@ -84,12 +84,12 @@ Counters: OS=0  CritT=0  HighT=0  InvGear=0  IllMode=0
 ======================
 
   [PERF] Cycle 2  CPU Cycles (excluding printf):
-    validate_inputs       : 58
-    update_mode           : 56
-    run_control_checks    : 62
-    update_fault_status   : 52
-    evaluate_system_state : 60
-    TOTAL                 : 288
+    validate_inputs       : 32
+    update_mode           : 106
+    run_control_checks    : 30
+    update_fault_status   : 30
+    evaluate_system_state : 32
+    TOTAL                 : 230
 
 === CYCLE SUMMARY ===
 Input  : Speed=130  Temp=85  Gear=4  Mode=IGNITION_ON
@@ -100,202 +100,235 @@ Counters: OS=1  CritT=0  HighT=0  InvGear=0  IllMode=0
 ======================
 
   [PERF] Cycle 3  CPU Cycles (excluding printf):
-    validate_inputs       : 60
-    update_mode           : 118
-    run_control_checks    : 232
-    update_fault_status   : 172
-    evaluate_system_state : 258
-    TOTAL                 : 840
+    validate_inputs       : 36
+    update_mode           : 62
+    run_control_checks    : 130
+    update_fault_status   : 94
+    evaluate_system_state : 136
+    TOTAL                 : 458
 
   [RESULT] PASS
-  [PERF] Test Total: 1582 CPU cycles
+  [PERF] Test Total: 1266 CPU cycles
 
 >>> TEST 3. High Temperature <<<
     Expected Summary: High temperature warning (PRIORITY 4), DEGRADED state
 
 === CYCLE SUMMARY ===
-Input  : Speed=0  Temp=25  Gear=0  Mode=ACC
-Status : Mode=ACC (prev=OFF)  State=NORMAL
+Input  : Speed=0  Temp=25  Gear=4  Mode=ACC
+Status : Mode=ACC (prev=IGNITION_ON)  State=NORMAL
 Faults : 0x00000000
-Counters: OS=0  CritT=0  HighT=0  InvGear=0  IllMode=0
+Counters: OS=1  CritT=0  HighT=0  InvGear=0  IllMode=0
   [OK] No active faults
 ======================
 
   [PERF] Cycle 1  CPU Cycles (excluding printf):
-    validate_inputs       : 66
-    update_mode           : 62
-    run_control_checks    : 186
-    update_fault_status   : 126
-    evaluate_system_state : 118
-    TOTAL                 : 558
+    validate_inputs       : 320
+    update_mode           : 128
+    run_control_checks    : 132
+    update_fault_status   : 170
+    evaluate_system_state : 126
+    TOTAL                 : 876
 
 === CYCLE SUMMARY ===
 Input  : Speed=40  Temp=80  Gear=1  Mode=IGNITION_ON
 Status : Mode=IGNITION_ON (prev=ACC)  State=NORMAL
 Faults : 0x00000000
-Counters: OS=0  CritT=0  HighT=0  InvGear=0  IllMode=0
+Counters: OS=1  CritT=0  HighT=0  InvGear=0  IllMode=0
   [OK] No active faults
 ======================
 
   [PERF] Cycle 2  CPU Cycles (excluding printf):
-    validate_inputs       : 62
-    update_mode           : 160
-    run_control_checks    : 62
-    update_fault_status   : 66
-    evaluate_system_state : 58
-    TOTAL                 : 408
+    validate_inputs       : 44
+    update_mode           : 150
+    run_control_checks    : 44
+    update_fault_status   : 46
+    evaluate_system_state : 112
+    TOTAL                 : 396
 
 === CYCLE SUMMARY ===
 Input  : Speed=40  Temp=100  Gear=1  Mode=IGNITION_ON
 Status : Mode=IGNITION_ON (prev=IGNITION_ON)  State=DEGRADED
 Faults : 0x00000004
-Counters: OS=0  CritT=0  HighT=1  InvGear=0  IllMode=0
+Counters: OS=1  CritT=0  HighT=1  InvGear=0  IllMode=0
   [PRIORITY 4] HIGH TEMPERATURE
 ======================
 
   [PERF] Cycle 3  CPU Cycles (excluding printf):
     validate_inputs       : 48
-    update_mode           : 102
-    run_control_checks    : 236
-    update_fault_status   : 148
-    evaluate_system_state : 214
-    TOTAL                 : 748
+    update_mode           : 96
+    run_control_checks    : 174
+    update_fault_status   : 120
+    evaluate_system_state : 240
+    TOTAL                 : 678
 
   [RESULT] PASS
-  [PERF] Test Total: 1714 CPU cycles
+  [PERF] Test Total: 1950 CPU cycles
 
 >>> TEST 4. Critical Overheat <<<
     Expected Summary: Critical overheat fault (PRIORITY 1), DEGRADED state
 
 === CYCLE SUMMARY ===
-Input  : Speed=0  Temp=25  Gear=0  Mode=ACC
-Status : Mode=ACC (prev=OFF)  State=NORMAL
+Input  : Speed=0  Temp=25  Gear=1  Mode=ACC
+Status : Mode=ACC (prev=IGNITION_ON)  State=NORMAL
 Faults : 0x00000000
-Counters: OS=0  CritT=0  HighT=0  InvGear=0  IllMode=0
+Counters: OS=1  CritT=0  HighT=1  InvGear=0  IllMode=0
   [OK] No active faults
 ======================
 
   [PERF] Cycle 1  CPU Cycles (excluding printf):
-    validate_inputs       : 54
-    update_mode           : 52
-    run_control_checks    : 134
-    update_fault_status   : 44
-    evaluate_system_state : 54
-    TOTAL                 : 338
+    validate_inputs       : 300
+    update_mode           : 262
+    run_control_checks    : 188
+    update_fault_status   : 354
+    evaluate_system_state : 260
+    TOTAL                 : 1364
 
 === CYCLE SUMMARY ===
 Input  : Speed=40  Temp=80  Gear=1  Mode=IGNITION_ON
 Status : Mode=IGNITION_ON (prev=ACC)  State=NORMAL
 Faults : 0x00000000
-Counters: OS=0  CritT=0  HighT=0  InvGear=0  IllMode=0
+Counters: OS=1  CritT=0  HighT=1  InvGear=0  IllMode=0
   [OK] No active faults
 ======================
 
   [PERF] Cycle 2  CPU Cycles (excluding printf):
-    validate_inputs       : 48
-    update_mode           : 110
-    run_control_checks    : 52
-    update_fault_status   : 52
-    evaluate_system_state : 48
-    TOTAL                 : 310
+    validate_inputs       : 70
+    update_mode           : 334
+    run_control_checks    : 288
+    update_fault_status   : 72
+    evaluate_system_state : 396
+    TOTAL                 : 1160
 
 === CYCLE SUMMARY ===
 Input  : Speed=40  Temp=115  Gear=1  Mode=IGNITION_ON
 Status : Mode=IGNITION_ON (prev=IGNITION_ON)  State=DEGRADED
 Faults : 0x00000002
-Counters: OS=0  CritT=1  HighT=0  InvGear=0  IllMode=0
+Counters: OS=1  CritT=1  HighT=1  InvGear=0  IllMode=0
   [PRIORITY 1] CRITICAL OVERHEAT
 ======================
 
   [PERF] Cycle 3  CPU Cycles (excluding printf):
-    validate_inputs       : 54
-    update_mode           : 96
-    run_control_checks    : 134
-    update_fault_status   : 142
-    evaluate_system_state : 140
-    TOTAL                 : 566
+    validate_inputs       : 62
+    update_mode           : 142
+    run_control_checks    : 238
+    update_fault_status   : 180
+    evaluate_system_state : 312
+    TOTAL                 : 934
 
   [RESULT] PASS
-  [PERF] Test Total: 1214 CPU cycles
+  [PERF] Test Total: 3458 CPU cycles
 
 >>> TEST 5. Invalid Gear <<<
     Expected Summary: FAULT_INVALID_GEAR set, gear corrected, DEGRADED state
 
 === CYCLE SUMMARY ===
-Input  : Speed=0  Temp=25  Gear=0  Mode=ACC
-Status : Mode=ACC (prev=OFF)  State=NORMAL
+Input  : Speed=0  Temp=25  Gear=1  Mode=ACC
+Status : Mode=ACC (prev=IGNITION_ON)  State=NORMAL
 Faults : 0x00000000
-Counters: OS=0  CritT=0  HighT=0  InvGear=0  IllMode=0
+Counters: OS=1  CritT=1  HighT=1  InvGear=0  IllMode=0
   [OK] No active faults
 ======================
 
   [PERF] Cycle 1  CPU Cycles (excluding printf):
-    validate_inputs       : 60
-    update_mode           : 46
-    run_control_checks    : 122
-    update_fault_status   : 96
-    evaluate_system_state : 48
-    TOTAL                 : 372
+    validate_inputs       : 294
+    update_mode           : 266
+    run_control_checks    : 266
+    update_fault_status   : 348
+    evaluate_system_state : 266
+    TOTAL                 : 1440
 
 === CYCLE SUMMARY ===
 Input  : Speed=40  Temp=80  Gear=1  Mode=IGNITION_ON
 Status : Mode=IGNITION_ON (prev=ACC)  State=NORMAL
 Faults : 0x00000000
-Counters: OS=0  CritT=0  HighT=0  InvGear=0  IllMode=0
+Counters: OS=1  CritT=1  HighT=1  InvGear=0  IllMode=0
   [OK] No active faults
 ======================
 
   [PERF] Cycle 2  CPU Cycles (excluding printf):
-    validate_inputs       : 54
-    update_mode           : 122
-    run_control_checks    : 48
-    update_fault_status   : 56
-    evaluate_system_state : 88
-    TOTAL                 : 368
+    validate_inputs       : 104
+    update_mode           : 332
+    run_control_checks    : 100
+    update_fault_status   : 94
+    evaluate_system_state : 250
+    TOTAL                 : 880
 
 === CYCLE SUMMARY ===
 Input  : Speed=40  Temp=80  Gear=1  Mode=IGNITION_ON
 Status : Mode=IGNITION_ON (prev=IGNITION_ON)  State=DEGRADED
 Faults : 0x00000008
-Counters: OS=0  CritT=0  HighT=0  InvGear=1  IllMode=0
+Counters: OS=1  CritT=1  HighT=1  InvGear=1  IllMode=0
   [PRIORITY 2] INVALID GEAR
 ======================
 
   [PERF] Cycle 3  CPU Cycles (excluding printf):
-    validate_inputs       : 208
-    update_mode           : 100
-    run_control_checks    : 136
-    update_fault_status   : 116
-    evaluate_system_state : 172
-    TOTAL                 : 732
+    validate_inputs       : 392
+    update_mode           : 200
+    run_control_checks    : 92
+    update_fault_status   : 248
+    evaluate_system_state : 700
+    TOTAL                 : 1632
 
   [RESULT] PASS
-  [PERF] Test Total: 1472 CPU cycles
+  [PERF] Test Total: 3952 CPU cycles
 
 >>> TEST 6. Illegal Mode Transition <<<
     Expected Summary: FAULT_ILLEGAL_MODE set, MODE_FAULT forced, DEGRADED state
 
 === CYCLE SUMMARY ===
 Input  : Speed=40  Temp=80  Gear=1  Mode=IGNITION_ON
-Status : Mode=FAULT (prev=OFF)  State=DEGRADED
-Faults : 0x00000010
-Counters: OS=0  CritT=0  HighT=0  InvGear=0  IllMode=1
-  [PRIORITY 2] ILLEGAL MODE TRANSITION
+Status : Mode=IGNITION_ON (prev=IGNITION_ON)  State=NORMAL
+Faults : 0x00000000
+Counters: OS=1  CritT=1  HighT=1  InvGear=1  IllMode=0
+  [OK] No active faults
 ======================
 
   [PERF] Cycle 1  CPU Cycles (excluding printf):
-    validate_inputs       : 48
-    update_mode           : 128
-    run_control_checks    : 48
-    update_fault_status   : 158
-    evaluate_system_state : 160
-    TOTAL                 : 542
+    validate_inputs       : 276
+    update_mode           : 276
+    run_control_checks    : 192
+    update_fault_status   : 344
+    evaluate_system_state : 270
+    TOTAL                 : 1358
+
+=== CYCLE SUMMARY ===
+Input  : Speed=40  Temp=80  Gear=1  Mode=OFF
+Status : Mode=OFF (prev=IGNITION_ON)  State=NORMAL
+Faults : 0x00000000
+Counters: OS=1  CritT=1  HighT=1  InvGear=1  IllMode=0
+  [OK] No active faults
+======================
+
+  [PERF] Cycle 2  CPU Cycles (excluding printf):
+    validate_inputs       : 76
+    update_mode           : 276
+    run_control_checks    : 76
+    update_fault_status   : 82
+    evaluate_system_state : 206
+    TOTAL                 : 716
+
+=== CYCLE SUMMARY ===
+Input  : Speed=40  Temp=80  Gear=1  Mode=IGNITION_ON
+Status : Mode=FAULT (prev=OFF)  State=DEGRADED
+Faults : 0x00000010
+Counters: OS=1  CritT=1  HighT=1  InvGear=1  IllMode=1
+  [PRIORITY 2] ILLEGAL MODE TRANSITION
+======================
+
+  [PERF] Cycle 3  CPU Cycles (excluding printf):
+    validate_inputs       : 90
+    update_mode           : 250
+    run_control_checks    : 86
+    update_fault_status   : 192
+    evaluate_system_state : 570
+    TOTAL                 : 1188
 
   [RESULT] PASS
-  [PERF] Test Total: 542 CPU cycles
+  [PERF] Test Total: 3262 CPU cycles
 
 >>> TEST 7. Multiple Faults in One Cycle <<<
     Expected Summary: 3 faults (CritT+OS+InvGear), priority order, SAFE state
+  [SYSTEM] Manual Reset Triggered
 
 === CYCLE SUMMARY ===
 Input  : Speed=0  Temp=25  Gear=0  Mode=ACC
@@ -306,12 +339,12 @@ Counters: OS=0  CritT=0  HighT=0  InvGear=0  IllMode=0
 ======================
 
   [PERF] Cycle 1  CPU Cycles (excluding printf):
-    validate_inputs       : 52
-    update_mode           : 106
-    run_control_checks    : 50
-    update_fault_status   : 112
-    evaluate_system_state : 50
-    TOTAL                 : 370
+    validate_inputs       : 362
+    update_mode           : 350
+    run_control_checks    : 256
+    update_fault_status   : 348
+    evaluate_system_state : 224
+    TOTAL                 : 1540
 
 === CYCLE SUMMARY ===
 Input  : Speed=40  Temp=80  Gear=1  Mode=IGNITION_ON
@@ -322,12 +355,12 @@ Counters: OS=0  CritT=0  HighT=0  InvGear=0  IllMode=0
 ======================
 
   [PERF] Cycle 2  CPU Cycles (excluding printf):
-    validate_inputs       : 106
-    update_mode           : 100
-    run_control_checks    : 52
-    update_fault_status   : 54
-    evaluate_system_state : 102
-    TOTAL                 : 414
+    validate_inputs       : 72
+    update_mode           : 196
+    run_control_checks    : 74
+    update_fault_status   : 84
+    evaluate_system_state : 78
+    TOTAL                 : 504
 
 === CYCLE SUMMARY ===
 Input  : Speed=140  Temp=120  Gear=1  Mode=IGNITION_ON
@@ -340,18 +373,19 @@ Counters: OS=1  CritT=1  HighT=0  InvGear=1  IllMode=0
 ======================
 
   [PERF] Cycle 3  CPU Cycles (excluding printf):
-    validate_inputs       : 112
-    update_mode           : 48
-    run_control_checks    : 194
-    update_fault_status   : 210
-    evaluate_system_state : 150
-    TOTAL                 : 714
+    validate_inputs       : 324
+    update_mode           : 174
+    run_control_checks    : 364
+    update_fault_status   : 342
+    evaluate_system_state : 440
+    TOTAL                 : 1644
 
   [RESULT] PASS
-  [PERF] Test Total: 1498 CPU cycles
+  [PERF] Test Total: 3688 CPU cycles
 
 >>> TEST 8. Persistent Fault Across Cycles <<<
     Expected Summary: Counters increment each cycle, SAFE state via persistence
+  [SYSTEM] Manual Reset Triggered
 
 === CYCLE SUMMARY ===
 Input  : Speed=0  Temp=25  Gear=0  Mode=ACC
@@ -362,12 +396,12 @@ Counters: OS=0  CritT=0  HighT=0  InvGear=0  IllMode=0
 ======================
 
   [PERF] Cycle 1  CPU Cycles (excluding printf):
-    validate_inputs       : 50
-    update_mode           : 106
-    run_control_checks    : 46
-    update_fault_status   : 52
-    evaluate_system_state : 50
-    TOTAL                 : 304
+    validate_inputs       : 340
+    update_mode           : 452
+    run_control_checks    : 336
+    update_fault_status   : 448
+    evaluate_system_state : 292
+    TOTAL                 : 1868
 
 === CYCLE SUMMARY ===
 Input  : Speed=40  Temp=80  Gear=1  Mode=IGNITION_ON
@@ -378,12 +412,12 @@ Counters: OS=0  CritT=0  HighT=0  InvGear=0  IllMode=0
 ======================
 
   [PERF] Cycle 2  CPU Cycles (excluding printf):
-    validate_inputs       : 96
-    update_mode           : 52
-    run_control_checks    : 58
-    update_fault_status   : 128
-    evaluate_system_state : 48
-    TOTAL                 : 382
+    validate_inputs       : 102
+    update_mode           : 256
+    run_control_checks    : 100
+    update_fault_status   : 96
+    evaluate_system_state : 108
+    TOTAL                 : 662
 
 === CYCLE SUMMARY ===
 Input  : Speed=130  Temp=115  Gear=1  Mode=IGNITION_ON
@@ -395,12 +429,12 @@ Counters: OS=1  CritT=1  HighT=0  InvGear=0  IllMode=0
 ======================
 
   [PERF] Cycle 3  CPU Cycles (excluding printf):
-    validate_inputs       : 54
-    update_mode           : 96
-    run_control_checks    : 122
-    update_fault_status   : 86
-    evaluate_system_state : 50
-    TOTAL                 : 408
+    validate_inputs       : 132
+    update_mode           : 268
+    run_control_checks    : 576
+    update_fault_status   : 468
+    evaluate_system_state : 412
+    TOTAL                 : 1856
 
 === CYCLE SUMMARY ===
 Input  : Speed=130  Temp=115  Gear=1  Mode=IGNITION_ON
@@ -412,12 +446,12 @@ Counters: OS=2  CritT=2  HighT=0  InvGear=0  IllMode=0
 ======================
 
   [PERF] Cycle 4  CPU Cycles (excluding printf):
-    validate_inputs       : 50
-    update_mode           : 46
-    run_control_checks    : 124
-    update_fault_status   : 46
-    evaluate_system_state : 114
-    TOTAL                 : 380
+    validate_inputs       : 128
+    update_mode           : 148
+    run_control_checks    : 420
+    update_fault_status   : 116
+    evaluate_system_state : 316
+    TOTAL                 : 1128
 
 === CYCLE SUMMARY ===
 Input  : Speed=130  Temp=115  Gear=1  Mode=IGNITION_ON
@@ -429,18 +463,19 @@ Counters: OS=3  CritT=3  HighT=0  InvGear=0  IllMode=0
 ======================
 
   [PERF] Cycle 5  CPU Cycles (excluding printf):
-    validate_inputs       : 48
-    update_mode           : 54
-    run_control_checks    : 134
-    update_fault_status   : 170
-    evaluate_system_state : 52
-    TOTAL                 : 458
+    validate_inputs       : 106
+    update_mode           : 112
+    run_control_checks    : 112
+    update_fault_status   : 104
+    evaluate_system_state : 104
+    TOTAL                 : 538
 
   [RESULT] PASS
-  [PERF] Test Total: 1932 CPU cycles
+  [PERF] Test Total: 6052 CPU cycles
 
 >>> TEST 9. Recovery / Reset Logic <<<
-    Expected Summary: DEGRADED during fault, recovers to NORMAL when inputs normalize
+    Expected Summary: Factory reset triggered, return to NORMAL
+  [SYSTEM] Manual Reset Triggered
 
 === CYCLE SUMMARY ===
 Input  : Speed=0  Temp=25  Gear=0  Mode=ACC
@@ -451,12 +486,12 @@ Counters: OS=0  CritT=0  HighT=0  InvGear=0  IllMode=0
 ======================
 
   [PERF] Cycle 1  CPU Cycles (excluding printf):
-    validate_inputs       : 50
-    update_mode           : 48
-    run_control_checks    : 108
-    update_fault_status   : 44
-    evaluate_system_state : 48
-    TOTAL                 : 298
+    validate_inputs       : 268
+    update_mode           : 350
+    run_control_checks    : 280
+    update_fault_status   : 340
+    evaluate_system_state : 234
+    TOTAL                 : 1472
 
 === CYCLE SUMMARY ===
 Input  : Speed=40  Temp=80  Gear=1  Mode=IGNITION_ON
@@ -467,12 +502,12 @@ Counters: OS=0  CritT=0  HighT=0  InvGear=0  IllMode=0
 ======================
 
   [PERF] Cycle 2  CPU Cycles (excluding printf):
-    validate_inputs       : 48
-    update_mode           : 118
-    run_control_checks    : 100
-    update_fault_status   : 44
-    evaluate_system_state : 54
-    TOTAL                 : 364
+    validate_inputs       : 86
+    update_mode           : 198
+    run_control_checks    : 84
+    update_fault_status   : 82
+    evaluate_system_state : 84
+    TOTAL                 : 534
 
 === CYCLE SUMMARY ===
 Input  : Speed=130  Temp=85  Gear=1  Mode=IGNITION_ON
@@ -483,12 +518,12 @@ Counters: OS=1  CritT=0  HighT=0  InvGear=0  IllMode=0
 ======================
 
   [PERF] Cycle 3  CPU Cycles (excluding printf):
-    validate_inputs       : 52
-    update_mode           : 50
-    run_control_checks    : 146
-    update_fault_status   : 102
-    evaluate_system_state : 142
-    TOTAL                 : 492
+    validate_inputs       : 100
+    update_mode           : 178
+    run_control_checks    : 340
+    update_fault_status   : 230
+    evaluate_system_state : 340
+    TOTAL                 : 1188
 
 === CYCLE SUMMARY ===
 Input  : Speed=40  Temp=80  Gear=1  Mode=IGNITION_ON
@@ -499,30 +534,14 @@ Counters: OS=1  CritT=0  HighT=0  InvGear=0  IllMode=0
 ======================
 
   [PERF] Cycle 4  CPU Cycles (excluding printf):
-    validate_inputs       : 56
-    update_mode           : 44
-    run_control_checks    : 176
-    update_fault_status   : 46
-    evaluate_system_state : 108
-    TOTAL                 : 430
-
-=== CYCLE SUMMARY ===
-Input  : Speed=40  Temp=80  Gear=1  Mode=IGNITION_ON
-Status : Mode=IGNITION_ON (prev=IGNITION_ON)  State=NORMAL
-Faults : 0x00000000
-Counters: OS=1  CritT=0  HighT=0  InvGear=0  IllMode=0
-  [OK] No active faults
-======================
-
-  [PERF] Cycle 5  CPU Cycles (excluding printf):
-    validate_inputs       : 52
-    update_mode           : 50
-    run_control_checks    : 108
-    update_fault_status   : 46
-    evaluate_system_state : 142
-    TOTAL                 : 398
+    validate_inputs       : 378
+    update_mode           : 278
+    run_control_checks    : 264
+    update_fault_status   : 348
+    evaluate_system_state : 264
+    TOTAL                 : 1532
 
   [RESULT] PASS
-  [PERF] Test Total: 1982 CPU cycles
+  [PERF] Test Total: 4726 CPU cycles
 
 === SUMMARY: 9 Total, 9 Passed, 0 Failed ===

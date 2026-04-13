@@ -11,6 +11,8 @@
 
 #include <stdint.h>
 
+#define INPUT_SENTINEL  (-32768)
+
 /* ======================== Enumerations ======================== */
 
 /**

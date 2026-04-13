@@ -1,7 +1,7 @@
 /**
  * @file ecu_control.c
- * @brief ECU test controller — automated test runner with JSON-based loading and CPU profiling.
- * Refactored for MISRA C compliance.
+ * @brief ECU test controller — automated test runner with persistent state and delta inputs.
+ * Refactored for cumulative flow and explicit system reset.
  */
 
 #include "types.h"
@@ -29,6 +29,7 @@ typedef struct {
     char           expected_desc[128];
     uint16_t       num_cycles;
     VehicleInput   cycles[MAX_CYCLES_PER_TEST];
+    int8_t         reset_triggered[MAX_CYCLES_PER_TEST];
     
     /* Validation criteria */
     Mode           exp_mode;
@@ -119,13 +120,12 @@ static void load_tests_from_json(void)
     jsmn_parser p;
     jsmntok_t t[MAX_TOKENS];
     jsmn_init(&p);
-    int r = jsmn_parse(&p, json_buffer, len, t, MAX_TOKENS);
+    int r = jsmn_parse(&p, json_buffer, (size_t)len, t, MAX_TOKENS);
     if (r < 0) {
         sys_printf("[ERROR] Failed to parse JSON: %d\n", r);
         return;
     }
 
-    /* Top-level must be an array */
     if (r < 1 || t[0].type != JSMN_ARRAY) {
         sys_log_error("JSON root must be an array");
         return;
@@ -139,6 +139,16 @@ static void load_tests_from_json(void)
 
         TestDefinition *td = &g_tests[g_num_loaded_tests];
         sys_memset(td, 0, sizeof(TestDefinition));
+        
+        /* Pre-fill all cycle fields with INPUT_SENTINEL */
+        for (uint16_t c_init = 0U; c_init < MAX_CYCLES_PER_TEST; c_init++) {
+            td->cycles[c_init].speed = INPUT_SENTINEL;
+            td->cycles[c_init].temperature = INPUT_SENTINEL;
+            td->cycles[c_init].gear = (int8_t)INPUT_SENTINEL;
+            td->cycles[c_init].requested_mode = (Mode)INPUT_SENTINEL;
+            td->reset_triggered[c_init] = 0;
+        }
+
         int obj_size = t[i].size;
         i++;
 
@@ -165,7 +175,7 @@ static void load_tests_from_json(void)
             } else if (jsoneq(json_buffer, &t[i], "cycles") == 0) {
                 int array_size = t[i+1].size;
                 td->num_cycles = (uint16_t)array_size;
-                i += 2; /* Move past 'cycles' key and the array start token */
+                i += 2;
                 for (int k = 0; k < array_size && k < (int)MAX_CYCLES_PER_TEST; k++) {
                     int cycle_obj_size = t[i].size;
                     i++;
@@ -181,6 +191,13 @@ static void load_tests_from_json(void)
                             i += 2;
                         } else if (jsoneq(json_buffer, &t[i], "mode") == 0) {
                             td->cycles[k].requested_mode = (Mode)sys_atoi(json_buffer + t[i+1].start);
+                            i += 2;
+                        } else if (jsoneq(json_buffer, &t[i], "reset") == 0) {
+                            /* Parse boolean - handle "true" or "1" */
+                            if (sys_strncmp(json_buffer + t[i+1].start, "true", 4) == 0 || 
+                                sys_strncmp(json_buffer + t[i+1].start, "1", 1) == 0) {
+                                td->reset_triggered[k] = 1;
+                            }
                             i += 2;
                         } else {
                             i++; /* Unknown key */
@@ -204,6 +221,8 @@ void run_all_test_cases(VehicleStatus *status, FaultStatus *faults)
         uint64_t tsc0, tsc1;
         uint32_t pass_count = 0U;
         uint32_t fail_count = 0U;
+        VehicleInput active_input;
+        sys_memset(&active_input, 0, sizeof(VehicleInput));
 
         /* Load from JSON */
         load_tests_from_json();
@@ -220,39 +239,60 @@ void run_all_test_cases(VehicleStatus *status, FaultStatus *faults)
         }
 
         sys_printf("\n========================================================\n");
-        sys_printf("  VEHICLE ECU SIMULATOR - DYNAMIC TEST RESULTS\n");
-        sys_printf("  (Loaded %u tests from test_cases.json)\n", (unsigned int)g_num_loaded_tests);
+        sys_printf("  VEHICLE ECU SIMULATOR - PERSISTENT TEST SESSION\n");
+        sys_printf("  (Loaded %u cumulative tests from test_cases.json)\n", (unsigned int)g_num_loaded_tests);
         sys_printf("========================================================\n");
 
-        sys_fprintf(logfile, "=== VEHICLE ECU TEST LOGS ===\n");
-        sys_fprintf(logfile, "Loaded from test_cases.json\n\n");
+        sys_fprintf(logfile, "=== VEHICLE ECU PERSISTENT TEST LOGS ===\n");
+        sys_fprintf(logfile, "Cumulative flow enabled. Factory state initialized.\n\n");
+
+        /* Factory Initial State */
+        g_suppress_io = 1;
+        init_system(status, faults);
+        g_suppress_io = 0;
 
         for (t = 0U; t < g_num_loaded_tests; t++) {
             uint64_t test_total_cycles = 0U;
             const TestDefinition *test = &g_tests[t];
-            const VehicleInput *last_input = &test->cycles[test->num_cycles - 1U];
 
             sys_fprintf(logfile, "\n>>> TEST %s <<<\n", test->name);
             sys_fprintf(logfile, "    Expected Summary: %s\n", test->expected_desc);
 
-            g_suppress_io = 1;
-            init_system(status, faults);
-            g_suppress_io = 0;
-
             for (c = 0U; c < test->num_cycles; c++) {
-                VehicleInput input = test->cycles[c];
                 CycleTiming timing = {0};
 
+                /* Check for explicit system reset */
+                if (test->reset_triggered[c] != 0) {
+                    g_suppress_io = 1;
+                    init_system(status, faults);
+                    sys_memset(&active_input, 0, sizeof(VehicleInput));
+                    g_suppress_io = 0;
+                    sys_fprintf(logfile, "  [SYSTEM] Manual Reset Triggered\n");
+                }
+
+                /* Apply Delta Update to Active Input */
+                const VehicleInput *delta = &test->cycles[c];
+                if (delta->speed != INPUT_SENTINEL)            active_input.speed = delta->speed;
+                if (delta->temperature != INPUT_SENTINEL)      active_input.temperature = delta->temperature;
+                if (delta->gear != (int8_t)INPUT_SENTINEL)     active_input.gear = delta->gear;
+                if (delta->requested_mode != (Mode)INPUT_SENTINEL) active_input.requested_mode = delta->requested_mode;
+
+                /* Scheduler Flow per Cycle (Cumulative) */
                 clear_all_faults(faults);
                 g_suppress_io = 1;
 
-                tsc0 = read_tsc(); validate_inputs(&input, status, faults); tsc1 = read_tsc();
-                timing.validate_inputs = tsc1 - tsc0;
+                /* Local copy of active_input to pass to modules (maintaining stability) */
+                VehicleInput current_cycle_input = active_input;
 
-                tsc0 = read_tsc(); update_mode(status, &input, faults); tsc1 = read_tsc();
+                tsc0 = read_tsc(); validate_inputs(&current_cycle_input, status, faults); tsc1 = read_tsc();
+                timing.validate_inputs = tsc1 - tsc0;
+                /* Update active_input with any corrections from validate_inputs */
+                active_input = current_cycle_input;
+
+                tsc0 = read_tsc(); update_mode(status, &active_input, faults); tsc1 = read_tsc();
                 timing.update_mode = tsc1 - tsc0;
 
-                tsc0 = read_tsc(); run_control_checks(&input, status, faults); tsc1 = read_tsc();
+                tsc0 = read_tsc(); run_control_checks(&active_input, status, faults); tsc1 = read_tsc();
                 timing.run_control_checks = tsc1 - tsc0;
 
                 tsc0 = read_tsc(); update_fault_status(faults); tsc1 = read_tsc();
@@ -267,7 +307,7 @@ void run_all_test_cases(VehicleStatus *status, FaultStatus *faults)
                                timing.evaluate_system_state;
                 test_total_cycles += timing.total;
 
-                log_cycle_summary(&input, status, faults, logfile);
+                log_cycle_summary(&active_input, status, faults, logfile);
                 log_cycle_timing(logfile, c + 1U, &timing);
             }
 
@@ -281,7 +321,7 @@ void run_all_test_cases(VehicleStatus *status, FaultStatus *faults)
 
             sys_fprintf(logfile, "\n  [RESULT] %s\n", result_str);
             if (pass == 0) {
-                sys_fprintf(logfile, "  [DETAILS] Mismatches found:\n");
+                sys_fprintf(logfile, "  [DETAILS] Mismatches against cumulative baseline:\n");
                 if (mode_match == 0)   sys_fprintf(logfile, "    - Mode mismatch: Exp=%d, Act=%d\n", (int)test->exp_mode, (int)status->current_mode);
                 if (state_match == 0)  sys_fprintf(logfile, "    - State mismatch: Exp=%d, Act=%d\n", (int)test->exp_state, (int)status->system_state);
                 if (faults_match == 0) sys_fprintf(logfile, "    - Faults mismatch: Exp=0x%08X, Act=0x%08X\n", (unsigned int)test->exp_faults, (unsigned int)faults->active_faults);
@@ -291,13 +331,13 @@ void run_all_test_cases(VehicleStatus *status, FaultStatus *faults)
             /* Console Summary */
             sys_printf("\n  TEST %s [%s]\n", test->name, result_str);
             sys_printf("  --------------------------------------------------------\n");
-            sys_printf("  Input    : Speed=%-3d  Temp=%-3d  Gear=%d  Mode=%s\n",
-                   (int)last_input->speed, (int)last_input->temperature, (int)last_input->gear, mode_to_name(last_input->requested_mode));
+            sys_printf("  Active   : Speed=%-3d  Temp=%-3d  Gear=%d  Mode=%s\n",
+                   (int)active_input.speed, (int)active_input.temperature, (int)active_input.gear, mode_to_name(active_input.requested_mode));
             sys_printf("  Expected : Mode=%-12s  State=%-8s  Faults=",
                    mode_to_name(test->exp_mode), state_to_name(test->exp_state));
             print_faults_inline_to_file(NULL, test->exp_faults);
             sys_printf("\n             (%s)\n", test->expected_desc);
-            sys_printf("  Actual   : Mode=%-12s  State=%-8s  Faults=",
+            sys_printf("  Current  : Mode=%-12s  State=%-8s  Faults=",
                    mode_to_name(status->current_mode), state_to_name(status->system_state));
             print_faults_inline(faults->active_faults);
             sys_printf("\n             Counters: OS=%u CritT=%u HighT=%u InvGear=%u IllMode=%u\n",
